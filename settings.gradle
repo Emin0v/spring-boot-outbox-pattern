@@ -1,0 +1,4 @@
+rootProject.name = 'spring-boot-outbox-pattern'
+include 'ms-user'
+include 'ms-product'
+

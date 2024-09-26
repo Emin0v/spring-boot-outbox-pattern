@@ -1,0 +1,8 @@
+spring:
+  kafka:
+    admin:
+      properties:
+        bootstrap.servers: ${KAFKA_HOST_NAME:localhost}:9092
+    consumer:
+      bootstrap-servers: ${KAFKA_HOST_NAME:localhost}:${KAFKA_PORT:9092}
+      group-id: product-group-id

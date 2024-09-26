@@ -1,0 +1,8 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: ms-user
+  profiles:
+    include: db
