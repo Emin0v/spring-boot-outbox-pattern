@@ -1,5 +1,7 @@
 ![outbox_pattern drawio](https://github.com/user-attachments/assets/d5522ee6-cd33-4c21-9645-972d1ef3a50f)
 
+[![CI](https://github.com/Emin0v/spring-boot-outbox-pattern/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Emin0v/spring-boot-outbox-pattern/actions/workflows/ci.yml)
+
 # Spring Boot Transactional Outbox Example
 
 A learning example that writes a user and an outbox row in one database transaction,
