@@ -6,6 +6,7 @@ import com.company.products.dto.UserInfoDto;
 import com.company.products.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -15,8 +16,15 @@ public class UserRegistrationService {
     private final UserRepository userRepository;
 
 
+    @Transactional
     public void saveUser(UserInfoDto dto) {
-        UserEntity userEntity = userMapper.toEntity(dto);
+        if (dto.getUserId() == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        UserEntity userEntity = userRepository.findByUserId(dto.getUserId())
+                .orElseGet(() -> userMapper.toEntity(dto));
+        userEntity.setName(dto.getName());
+        userEntity.setUsername(dto.getUsername());
         userRepository.save(userEntity);
     }
 }
