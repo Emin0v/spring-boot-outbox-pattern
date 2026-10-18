@@ -1,0 +1,23 @@
+name: CI
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+          cache: gradle
+      - run: ./gradlew check --no-daemon
+      - name: Check startup scripts
+        run: |
+          for script in start.sh database-source-connector.sh create-directory-for-jar-files.sh; do
+            sh -n "$script"
+          done

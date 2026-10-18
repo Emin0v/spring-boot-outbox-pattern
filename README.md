@@ -17,13 +17,32 @@ The connector uses JDBC polling, not transaction-log change data capture.
 ## Guarantees and limitations
 
 The local transaction couples the user write to the outbox insert. It does not make the
-database, connector, Kafka, and consumer one atomic operation. The consumer save path has
-no explicit event deduplication step, so duplicate delivery needs to be handled before this
-is used beyond an example. Concurrent transaction commit order, connector recovery, and
-outbox retention also need explicit design and tests.
+database, connector, Kafka, and consumer one atomic operation. The consumer now identifies
+a user by the source `userId` and updates the existing local projection on replay. A unique,
+non-null database constraint backs that identity. Existing databases must be checked for
+duplicate/missing `userId` values before applying the constraint.
 
-No automated test sources or CI workflow are currently committed. The project uses the
-Java 11 and Spring Boot 2.5.7 baseline listed below.
+Concurrent first deliveries can still race on the unique constraint and require a retry.
+Events have no version/order guard, so an older event arriving later can overwrite a newer
+projection. This is not general event deduplication or an exactly-once guarantee. Incrementing
+JDBC polling, concurrent transaction commit order, connector recovery, and outbox retention
+also need explicit design and end-to-end tests.
+
+## Verification
+
+With Java 11 active, run:
+
+```bash
+./gradlew check
+```
+
+JPA/H2 tests verify replayed registrations, source-user identity, updates of existing
+projections, successful user/outbox commits, and rollback of a user insert when the outbox
+write fails. The replay tests reproduce unique-username failures in the previous consumer.
+CI runs the same checks. These tests do not start Kafka Connect, MySQL, or PostgreSQL and
+do not establish end-to-end delivery or crash-recovery guarantees.
+
+The project retains the Java 11 and Spring Boot 2.5.7 baseline listed below.
 
 ## Tech Stack
 
@@ -38,14 +57,31 @@ Java 11 and Spring Boot 2.5.7 baseline listed below.
 * Lombok
 
 ## Build & Run
-From the repository root, make the Gradle wrapper executable and run the startup script:
+With Java 11 active, run the startup script from the repository root:
 
 ```bash
-chmod +x gradlew
-sh ./start.sh
+./start.sh
 ```
 
-The script builds the services, prepares connector JARs, starts Docker Compose, and submits
-the JDBC connector configuration. It expects the legacy `docker-compose` executable.
-Connector registration runs immediately after Compose starts; if Kafka Connect is not ready,
-wait for its REST API on port 8083 and retry `sh ./database-source-connector.sh`.
+The script builds the services, copies connector JARs into the repository's ignored `build/`
+directory, and starts the infrastructure through Docker Compose v2. It waits up to approximately
+two minutes for Kafka Connect's REST API on port 8083. Tracked connector JARs are preserved.
+
+Compose starts infrastructure only. In separate terminals, start both applications:
+
+```bash
+./gradlew :ms-user:bootRun
+./gradlew :ms-product:bootRun
+```
+
+The user service uses port 8085; the product service uses port 8086. Wait for their startup
+and Hibernate table initialization, then register the connector:
+
+```bash
+sh ./database-source-connector.sh
+```
+
+Registration fails on HTTP errors. The request creates `jdbc-source-connector`; if it already
+exists, inspect or remove that existing connector before registering it again. A successful
+registration request is not proof that the connector task is running; inspect its status at
+`http://localhost:8083/connectors/jdbc-source-connector/status`.

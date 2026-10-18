@@ -33,7 +33,6 @@ public class UserService {
     @Transactional
     public UserResponse save(UserCreateRequest dto) {
         UserEntity userEntity = userMapper.toEntity(dto, passwordEncoder);
-        System.out.println("userEntity="+userEntity);
         UserEntity savedUser = userRepository.save(userEntity);
 
         Outbox outbox = Outbox.builder()

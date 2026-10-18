@@ -1,4 +1,4 @@
-curl -X POST -H "Content-Type: application/json" --data '{
+curl -fsS -X POST -H "Content-Type: application/json" --data '{
   "name": "jdbc-source-connector",
   "config": {
     "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
